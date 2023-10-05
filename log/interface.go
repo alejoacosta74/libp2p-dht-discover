@@ -5,6 +5,8 @@ import (
 )
 
 type Logger interface {
+	Trace(keyvals ...interface{})
+	Tracef(msg string, args ...interface{})
 	Debug(keyvals ...interface{})
 	Debugf(msg string, args ...interface{})
 	Info(keyvals ...interface{})
@@ -25,6 +27,14 @@ type LogWrapper struct {
 
 // Interface assertion
 var _ Logger = (*LogWrapper)(nil)
+
+func (l *LogWrapper) Trace(keyvals ...interface{}) {
+	l.entry.Trace(keyvals...)
+}
+
+func (l *LogWrapper) Tracef(msg string, args ...interface{}) {
+	l.entry.Tracef(msg, args...)
+}
 
 func (l *LogWrapper) Debug(keyvals ...interface{}) {
 	l.entry.Debug(keyvals...)

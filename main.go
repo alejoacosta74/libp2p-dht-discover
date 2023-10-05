@@ -60,8 +60,8 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-	// Start listening for address changes
-	go client.ListenForAddrChanges()
+	// Start listening for events
+	go client.ListenForEvents()
 
 	// initialize and bootstrap the DHT
 	if err := client.InitDHT(); err != nil {
@@ -74,6 +74,7 @@ func main() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	log.Warn("Received signal, shutting down...")
+	cancel()
 	if err := node.Close(); err != nil {
 		panic(err)
 	}

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"io"
 	"libp2p-dht-discover/log"
 	"net/http"
 	"strings"
@@ -84,11 +85,71 @@ func (c *P2PClient) connectHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Connected successfully to peer " + addrInfo.ID.Pretty()))
 }
 
+// handler for the /discover/{peerID} endpoint
+func (c *P2PClient) discoverHandler(w http.ResponseWriter, r *http.Request) {
+	peerIDStr := strings.TrimPrefix(r.URL.Path, "/discover/")
+	peerID, err := peer.Decode(peerIDStr)
+	if err != nil {
+		log.Errorf("Failed to decode peer ID: %s", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Discover the peer's addresses using DHT
+	discoveredAddrsInfo, err := c.dht.FindPeer(c.ctx, peerID)
+	if err != nil {
+		log.Errorf("Failed to discover peer: %v, error: %s", peerID, err)
+		http.Error(w, "Failed to discover peer: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Info("Discovered addresses:", discoveredAddrsInfo)
+
+	if err := c.node.Connect(c.ctx, discoveredAddrsInfo); err != nil {
+		log.Errorf("Failed to connect to peer: %v, %s", discoveredAddrsInfo.ID.Pretty(), err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Discovered and connected successfully to peer " + discoveredAddrsInfo.ID.Pretty()))
+}
+
+// handler for the /send/{peerID} endpoint
+func (c *P2PClient) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) != 3 {
+		log.Errorf("Invalid request. Parts: %v", parts)
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	peerIDStr := parts[2]
+	peerID, err := peer.Decode(peerIDStr)
+	if err != nil {
+		log.Errorf("Failed to decode peer ID: %s", err)
+		http.Error(w, "Invalid peer ID", http.StatusBadRequest)
+		return
+	}
+
+	// Read the message from the request body
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusInternalServerError)
+		return
+	}
+	message := string(bodyBytes)
+
+	c.sendMessage(peerID, message)
+	log.Infof("Sent message: %s to peer %s", message, peerID.String())
+	w.Write([]byte("Message sent successfully"))
+}
+
 // NewServer creates a new http server with the available handlers
 func (c *P2PClient) newServer() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/dhtpeers", c.dhtPeersHandler)
 	mux.HandleFunc("/nodepeers", c.nodePeersHandler)
 	mux.HandleFunc("/connect/", c.connectHandler)
+	mux.HandleFunc("/send/", c.sendMessageHandler)
+	mux.HandleFunc("/discover/", c.discoverHandler)
 	return mux
 }

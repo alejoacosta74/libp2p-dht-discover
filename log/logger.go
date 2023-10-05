@@ -17,6 +17,14 @@ func ConfigureLogger(opts ...Options) {
 	}
 }
 
+func Trace(keyvals ...interface{}) {
+	logger.Trace(keyvals...)
+}
+
+func Tracef(msg string, args ...interface{}) {
+	logger.Tracef(msg, args...)
+}
+
 func Debug(keyvals ...interface{}) {
 	logger.Debug(keyvals...)
 }
