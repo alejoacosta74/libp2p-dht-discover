@@ -94,6 +94,7 @@ func (c *P2PClient) discoverHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Debugf("Received request to discover Peer ID: %s", peerID.String())
 
 	// Discover the peer's addresses using DHT
 	discoveredAddrsInfo, err := c.dht.FindPeer(c.ctx, peerID)

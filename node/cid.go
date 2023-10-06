@@ -1,16 +1,17 @@
-package utils
+package node
 
 import (
 	"crypto/rand"
-	"libp2p-dht-discover/log"
 	"os"
 
-	// log "github.com/ipfs/go-log/v2"
+	"libp2p-dht-discover/log"
+
 	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
-// GetPrivKey returns the private key stored in the file
-func GetPrivKey() (crypto.PrivKey, error) {
+// Returns the private key stored in the file to be used to generate
+// the node's identity (CID)
+func getPrivKey() (crypto.PrivKey, error) {
 	// check if there is a file with the private key. It not, create one
 	_, err := os.Stat("private.key")
 	if os.IsNotExist(err) {

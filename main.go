@@ -12,11 +12,7 @@ import (
 	// log "github.com/ipfs/go-log/v2"
 	"libp2p-dht-discover/client"
 	"libp2p-dht-discover/log"
-	"libp2p-dht-discover/utils"
-
-	"github.com/libp2p/go-libp2p"
-
-	multiaddr "github.com/multiformats/go-multiaddr"
+	p2pnode "libp2p-dht-discover/node"
 )
 
 func main() {
@@ -26,25 +22,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	privateKey, err := utils.GetPrivKey()
-	if err != nil {
-		log.Fatalf("error getting private key: %s", err)
-	}
-
 	ipaddr := "0.0.0.0"
 	port := "2001"
-	sourceMultiAddr, _ := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", ipaddr, port))
-
-	node, err := libp2p.New(
-		libp2p.Identity(privateKey),
-		libp2p.ListenAddrs(sourceMultiAddr),
-		libp2p.EnableNATService(),
-		libp2p.NATPortMap(),
-	)
+	node, err := p2pnode.NewNode(ipaddr, port)
 	if err != nil {
 		log.Fatalf("error creating node: %s", err)
 	}
-
 	// log the node's listening addresses
 	for _, addr := range node.Addrs() {
 		log.Infof("listening on: %s", addr)
