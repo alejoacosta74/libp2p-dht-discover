@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"libp2p-dht-discover/log"
 	"os"
 	"strings"
@@ -8,39 +9,37 @@ import (
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
+var addressReplaced = false
+
 // returns a function that replaces the internal IP (i.e. Docker IP) with the host IP
 func makeAddrsFactory(hostIP string) func([]multiaddr.Multiaddr) []multiaddr.Multiaddr {
 	return func(addrs []multiaddr.Multiaddr) []multiaddr.Multiaddr {
-		var newAddrs []multiaddr.Multiaddr
-		var dockerIP string
+		if addressReplaced {
+			return addrs
+		}
+		// var newAddrs []multiaddr.Multiaddr
+		// var dockerIP string
 
-		// Find the first non-loopback IP, which should be the Docker container's IP
+		// Append a new address with the host IP and the same port as the Docker IP
 		for _, addr := range addrs {
 			if !isLoopbackAddr(addr) {
 				parts := strings.Split(addr.String(), "/")
-				if len(parts) > 1 && parts[1] == "ip4" {
-					log.Debugf("found docker IP: %s", parts[2])
-					dockerIP = parts[2]
+				if len(parts) > 1 && parts[1] == "ip4" && parts[2] != hostIP {
+					port := parts[4]
+					newAddrStr := fmt.Sprintf("/ip4/%s/tcp/%s", hostIP, port)
+					newAddr, err := multiaddr.NewMultiaddr(newAddrStr)
+					if err == nil {
+						addrs = append(addrs, newAddr)
+						log.Debugf("added address: %s", newAddr.String())
+					} else {
+						log.Errorf("error creating new multiaddr from addr %s, error: %s", newAddrStr, err)
+					}
 					break
 				}
 			}
 		}
-
-		// Replace the Docker IP with the host IP
-		for _, addr := range addrs {
-			log.Debugf("replacing docker IP with address: %s", addr.String())
-			if dockerIP != "" {
-				newAddr, err := multiaddr.NewMultiaddr(strings.Replace(addr.String(), dockerIP, hostIP, 1))
-				if err == nil {
-					newAddrs = append(newAddrs, newAddr)
-				} else {
-					log.Errorf("error creating new multiaddr from addr %sm errir: %s", addr.String(), err)
-				}
-			} else {
-				newAddrs = append(newAddrs, addr)
-			}
-		}
-		return newAddrs
+		addressReplaced = true
+		return addrs
 	}
 }
 
