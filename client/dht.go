@@ -31,13 +31,13 @@ func (c *P2PClient) InitDHT() error {
 
 	defaultBootstrapAddInfo := kadht.GetDefaultBootstrapPeerAddrInfos()
 	for _, peerInfo := range defaultBootstrapAddInfo {
-		log.Infof("adding bootstraping node: %s", peerInfo.ID.Pretty())
+		log.Debugf("adding bootstraping node: %s", peerInfo.ID.Pretty())
 		err := c.node.Connect(c.ctx, peerInfo)
 		if err != nil {
 			log.Errorf("error connecting to bootstrap node: %s", err)
 			continue
 		}
-		log.Infof("connected to bootstrap node: %s", peerInfo.ID.Pretty())
+		log.Debugf("connected to bootstrap node: %s", peerInfo.ID.Pretty())
 
 	}
 

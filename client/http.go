@@ -139,7 +139,7 @@ func (c *P2PClient) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	message := string(bodyBytes)
 
 	c.sendMessage(peerID, message)
-	log.Infof("Sent message: %s to peer %s", message, peerID.String())
+	log.Infof("Sent message: '%s' to peer %s", message, peerID.String())
 	w.Write([]byte("Message sent successfully"))
 }
 

@@ -22,13 +22,23 @@ func (c *P2PClient) handleStream(s network.Stream) {
 	}
 
 	// Print the received message
-	log.Infof("Received message: %s", string(buf[:n]))
+	log.Infof("Received message: '%s'", string(buf[:n]))
 
 	// send acknowlegdment back to the sender
 	_, err = s.Write([]byte("Message received!"))
 	if err != nil {
 		log.Errorf("Error sending acknowlegdment: %s", err)
 	}
+
+	// Read the acknowledgment from the sender
+	n, err = s.Read(buf)
+	if err != nil {
+		log.Errorf("Error reading acknowledgment from stream: %s", err)
+		return
+	}
+
+	// Print the received acknowledgment
+	log.Infof("Received acknowledgment: '%s'", string(buf[:n]))
 }
 
 // This function is used by the node to send a message to a peer using a stream
@@ -51,5 +61,5 @@ func (c *P2PClient) sendMessage(peerID peer.ID, message string) {
 		log.Errorf("Error writing to stream: %s", err)
 		return
 	}
-	log.Infof("Sent message: %s to peer %s", message, peerID.String())
+	log.Infof("Sent message: '%s' to peer %s", message, peerID.String())
 }
